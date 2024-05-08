@@ -9,6 +9,7 @@ import com.example.pokedex.domain.PokemonListUseCase
 import com.example.pokedex.domain.PokemonPaletteUseCase
 import com.example.pokedex.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -31,9 +32,9 @@ class PokedexViewModel @Inject constructor(
     private val _selectedPokemonData = MutableStateFlow<PokemonData?>(null)
     val selectedPokemonData = _selectedPokemonData.asStateFlow()
 
-    fun fetchPokemonList() {
+    fun fetchPokemonList(coroutineScope: CoroutineScope = viewModelScope) {
         if (nextPageExists) {
-            viewModelScope.launch {
+            coroutineScope.launch {
                 when (val response = pokemonListUseCase.fetchPokemonList(
                     offset = pageItemCount * currentPageIndex,
                     limit = pageItemCount,
@@ -56,8 +57,8 @@ class PokedexViewModel @Inject constructor(
         }
     }
 
-    fun getPokemonData(id: Int) {
-        viewModelScope.launch {
+    fun fetchPokemonDataById(id: Int, coroutineScope: CoroutineScope = viewModelScope) {
+        coroutineScope.launch {
             when (val response = pokemonDataUseCase.fetchPokemonDataById(id)) {
                 is Resource.Loading -> {
 

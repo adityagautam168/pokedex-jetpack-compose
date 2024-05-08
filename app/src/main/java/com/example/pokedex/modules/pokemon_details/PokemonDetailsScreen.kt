@@ -20,6 +20,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -49,9 +50,16 @@ fun PokemonDetailsScreen(
 ) {
     val viewModel = hiltViewModel<PokedexViewModel>()
     val pokemonData by viewModel.selectedPokemonData.collectAsState()
-    if (pokemonData == null) {
-        viewModel.getPokemonData(pokemonId)
-    }
+
+    LaunchedEffect(
+        key1 = pokemonId,
+        block = {
+            viewModel.fetchPokemonDataById(
+                id = pokemonId,
+                coroutineScope = this,
+            )
+        }
+    )
 
     Surface(
         color = Color.Black,
@@ -68,7 +76,6 @@ fun PokemonDetailsScreen(
         }
 
         val scrollState = rememberScrollState()
-
         Box(
             modifier = Modifier
                 .fillMaxSize()
