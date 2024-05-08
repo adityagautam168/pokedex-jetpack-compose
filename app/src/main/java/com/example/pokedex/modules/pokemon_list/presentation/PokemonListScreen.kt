@@ -29,7 +29,7 @@ fun PokemonListScreen(navController: NavController) {
 
     val pokemonList by viewModel.pokemonList.collectAsState()
     if (pokemonList.isEmpty()) {
-        viewModel.fetchPokemonList(0)
+        viewModel.fetchPokemonList()
     }
 
     Surface(
@@ -53,7 +53,8 @@ fun PokemonListScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(24.dp))
             PokedexEntryGrid(
                 entryList = pokemonList,
-                navController = navController
+                navController = navController,
+                onEndReached = { viewModel.fetchPokemonList() }
             )
         }
     }

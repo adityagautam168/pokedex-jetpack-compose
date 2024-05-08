@@ -100,5 +100,6 @@ dependencies {
     }
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
+    // Palette
     implementation("androidx.palette:palette-ktx:1.0.0")
 }

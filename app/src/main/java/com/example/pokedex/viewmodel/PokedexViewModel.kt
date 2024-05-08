@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -25,23 +24,33 @@ class PokedexViewModel @Inject constructor(
     private val _pokemonList = MutableStateFlow<List<PokemonData>>(emptyList())
     val pokemonList = _pokemonList.asStateFlow()
 
+    private val pageItemCount = 20
+    private var currentPageIndex = 0
+    private var nextPageExists = true
+
     private val _selectedPokemonData = MutableStateFlow<PokemonData?>(null)
     val selectedPokemonData = _selectedPokemonData.asStateFlow()
 
-    fun fetchPokemonList(offset: Int = 0) {
-        viewModelScope.launch {
-            when (val response = pokemonListUseCase.fetchPokemonList(offset = offset, limit = 20)) {
-                is Resource.Loading -> {
+    fun fetchPokemonList() {
+        if (nextPageExists) {
+            viewModelScope.launch {
+                when (val response = pokemonListUseCase.fetchPokemonList(
+                    offset = pageItemCount * currentPageIndex,
+                    limit = pageItemCount,
+                )) {
+                    is Resource.Loading -> {
 
-                }
-                is Resource.Success -> {
-                    Timber.tag("MyTest").d("FetchPokemonList Success")
-                    response.data?.list?.let { data ->
-                        _pokemonList.update { it + data }
                     }
-                }
-                is Resource.Error -> {
+                    is Resource.Success -> {
+                        response.data?.list?.let { data ->
+                            _pokemonList.update { it + data }
+                            currentPageIndex++
+                            nextPageExists = response.data.next != null
+                        }
+                    }
+                    is Resource.Error -> {
 
+                    }
                 }
             }
         }
