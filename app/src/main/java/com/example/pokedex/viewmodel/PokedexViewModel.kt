@@ -10,11 +10,21 @@ import com.example.pokedex.domain.PokemonPaletteUseCase
 import com.example.pokedex.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 @HiltViewModel
 class PokedexViewModel @Inject constructor(
@@ -23,7 +33,21 @@ class PokedexViewModel @Inject constructor(
   private val pokemonPaletteUseCase: PokemonPaletteUseCase,
 ) : ViewModel() {
     private val _pokemonList = MutableStateFlow<List<PokemonData>>(emptyList())
-    val pokemonList = _pokemonList.asStateFlow()
+
+    private var searchJob: Job? = null
+    private val searchDebouncePeriod = 300.toDuration(DurationUnit.MILLISECONDS)
+    private val _pokemonSearchFilteredList = MutableStateFlow<List<PokemonData>?>(null)
+
+    val pokemonList = combine(
+        _pokemonList,
+        _pokemonSearchFilteredList
+    ) { list: List<PokemonData>, filteredList: List<PokemonData>? ->
+        if (filteredList != null) {
+            return@combine filteredList
+        } else {
+            return@combine list
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
 
     private val pageItemCount = 20
     private var currentPageIndex = 0
@@ -77,5 +101,29 @@ class PokedexViewModel @Inject constructor(
         return pokemonPaletteUseCase
             .getPaletteFromSpriteDrawable(drawable)
             .getDominantColor(defaultColorInt)
+    }
+
+    fun searchPokemon(searchQuery: String) {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            if (searchQuery.isBlank()) {
+                _pokemonSearchFilteredList.emit(null)
+            } else {
+                _pokemonSearchFilteredList.emit(
+                    value = _pokemonList.value.filter { data ->
+                        data.name?.contains(searchQuery.trim(), ignoreCase = true) ?: false
+                    }
+                )
+            }
+        }
+    }
+
+    @OptIn(FlowPreview::class)
+    fun searchPokemon(queryFlow: Flow<String>) {
+        viewModelScope.launch {
+            queryFlow.debounce(searchDebouncePeriod).collectLatest { searchQuery ->
+                searchPokemon(searchQuery)
+            }
+        }
     }
 }

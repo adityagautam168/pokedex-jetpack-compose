@@ -10,6 +10,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,15 +23,20 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
 fun SearchBar(
     modifier: Modifier = Modifier,
     hint: String = "",
+    onQueryChange: (query: Flow<String>) -> Unit,
+    onSearch: (query: String) -> Unit,
 ) {
-    var query by remember {
-        mutableStateOf("")
+    val queryFlow = remember {
+        MutableStateFlow("")
     }
+    val query by queryFlow.collectAsState()
 
     val focusManager = LocalFocusManager.current
     var isFocused by remember {
@@ -51,7 +57,8 @@ fun SearchBar(
         BasicTextField(
             value = query,
             onValueChange = {
-                query = it
+                queryFlow.value = it
+                onQueryChange(queryFlow)
             },
             maxLines = 1,
             singleLine = true,
@@ -62,6 +69,7 @@ fun SearchBar(
             keyboardActions = KeyboardActions(
                 onSearch = {
                     focusManager.clearFocus()
+                    onSearch(query)
                 },
             ),
             modifier = Modifier

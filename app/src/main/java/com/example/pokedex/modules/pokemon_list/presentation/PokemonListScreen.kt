@@ -54,7 +54,13 @@ fun PokemonListScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(24.dp))
             SearchBar(
                 modifier = Modifier.padding(horizontal = 24.dp),
-                hint = "Search..."
+                hint = "Search...",
+                onQueryChange = {
+                    viewModel.searchPokemon(it)
+                },
+                onSearch = { query ->
+                    viewModel.searchPokemon(query)
+                },
             )
             Spacer(modifier = Modifier.height(24.dp))
             PokedexEntryGrid(
